@@ -103,7 +103,7 @@ writer_template = """Your job is to write a compelling football match chronicle 
                     """
 
 # Initialize LLM
-llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp')
+llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
 
 # Create Agents
 search_agent = create_agent(llm, tools, search_template)
