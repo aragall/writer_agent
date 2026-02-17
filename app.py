@@ -182,11 +182,22 @@ if st.button("Generate Chronicle"):
                 # Extract the final response from the writer agent
                 if final_state and 'messages' in final_state:
                     messages = final_state['messages']
-                    # st.write(f"Total messages: {len(messages)}") # Debug
                     if messages:
-                        final_message = messages[-1].content
-                        st.markdown("### Match Chronicle")
-                        st.markdown(final_message)
+                        last_msg = messages[-1]
+                        # st.write("--- Debug: Last Message Info ---")
+                        # st.write(f"Type: {type(last_msg)}")
+                        # st.write(f"Content: '{last_msg.content}'") 
+                        # st.write(f"Additional kwargs: {last_msg.additional_kwargs}")
+                        # st.write("-------------------------------")
+                        
+                        final_message = last_msg.content
+                        
+                        if not final_message:
+                            st.warning("The agent returned an empty response. Let's check the previous steps.")
+                            st.json([m.content for m in messages]) # Show history to debug
+                        else:
+                            st.markdown("### Match Chronicle")
+                            st.markdown(final_message)
                     else:
                          st.error("No messages returned.")
                 else:
