@@ -13,12 +13,51 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="Football Chronicle Generator", page_icon="⚽")
 
-st.title("⚽ Football Chronicle Generator")
-st.markdown("Generate detailed football match chronicles using AI agents.")
+# --- Custom CSS for MARCA Style ---
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #ffffff;
+    }
+    h1 {
+        color: #CC0000 !important;
+        font-family: 'Arial Black', sans-serif;
+        text-transform: uppercase;
+        border-bottom: 4px solid #CC0000;
+        padding-bottom: 10px;
+    }
+    h2, h3 {
+        color: #000000 !important;
+        font-family: 'Arial', sans-serif;
+        font-weight: bold;
+    }
+    .stButton>button {
+        background-color: #CC0000 !important;
+        color: white !important;
+        border-radius: 0px !important;
+        font-weight: bold !important;
+        font-size: 18px !important;
+        text-transform: uppercase;
+        border: none !important;
+    }
+    .stMarkdown p {
+        font-family: 'Georgia', serif;
+        font-size: 18px;
+        line-height: 1.6;
+        color: #333333;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #f0f0f0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("⚽ FUT CHRONICLE GENERATOR")
+st.markdown("**La pasión del fútbol, generada por IA.**")
 
 # Sidebar for API Keys
 with st.sidebar:
-    st.header("Configuration")
+    st.header("CONFIGURACIÓN")
     google_api_key = st.text_input("Google API Key", type="password", help="Get your key from Google AI Studio")
     tavily_api_key = st.text_input("Tavily API Key", type="password", help="Get your key from Tavily")
     
@@ -95,40 +134,49 @@ outliner_template = """Tu trabajo es tomar como entrada una lista de resultados 
                        - Conclusión / Resumen.
                     """
 
-writer_template = """Tu trabajo es escribir una crónica o artículo de fútbol convincente basado en el esquema proporcionado.
-                        Escribe en un estilo periodístico deportivo: atractivo, dramático y factual.
+writer_template = """Tu trabajo es escribir una crónica de fútbol con el ESTILO INCONFUNDIBLE DE "MARCA".
                         
-                        **IMPORTANTE: EL RESULTADO DEBE ESTAR SIEMPRE EN ESPAÑOL.**
+                        **ESTILO Y TONO:**
+                        - **SENSACIONALISTA Y APASIONADO:** Usa mayúsculas para enfatizar, exclamaciones y un lenguaje muy vivo ("PARTIDAZO", "RECITAL", "ESCÁNDALO", "ROBO", "HEROIDIDAD").
+                        - **PERIODÍSTICO PERO "FOROFO":** Debes sonar como un redactor deportivo emocionado. No seas neutral.
+                        - **FRASES CORTAS Y DIRECTAS:** Párrafos breves, mucho ritmo.
                         
-                        Formatea la salida de la siguiente manera:
+                        **ESTRUCTURA OBLIGATORIA (FORMATO MARCA):**
                         
-                        ## TÍTULO: <Título Atractivo>
+                        1. **TITULAR FLASH:** Una frase corta, impactante, en MAYÚSCULAS. (Ej: "¡EL MADRID NUNCA MUERE!")
+                        2. **SUBTÍTULO:** Un resumen de una línea con un dato clave o la figura del partido.
+                        3. **LA FOTO:** (Describe brevemente una imagen mental del momento clave, ej: *Vinicius besando el escudo...*)
+                        4. **CRÓNICA (El cuerpo):**
+                           - **Introducción:** ¡Directo a la yugular! Quién ganó y por qué fue épico.
+                           - **El Crack:** Destaca al mejor jugador con adjetivos grandilocuentes.
+                           - **El Dandy:** El jugador con más clase.
+                           - **El Duro:** La acción más polémica o el jugador más agresivo.
+                           - **Desarrollo:** Cuenta los goles y momentos clave con mucha emoción.
+                        5. **FICHA TÉCNICA:**
+                           - Goles: (Minuto y autor).
+                           - Estadio: (Nombre y asistencia).
                         
-                        **Fecha:** <Fecha del evento/hoy>
-                        **Contexto:** <Estadio/Competición/Tema>
-                        
-                        <Cuerpo de la crónica/artículo>
-                        
-                      NOTA: No copies el esquema palabra por palabra. Desarrolla una narrativa completa usando los detalles proporcionados.
-                       ```
+                        **IMPORTANTE:**
+                        - EL RESULTADO DEBE ESTAR SIEMPRE EN ESPAÑOL.
+                        - SI HAY POLÉMICA, MÓJATE (Opina si fue penalti o no).
                         
                         **INSTRUCCIONES DE REVISIÓN:**
                         Si recibes feedback de un REVISOR, tu trabajo es REESCRIBIR la crónica incorporando TODAS las sugerencias.
                         Mantén el mismo formato de salida.
                     """
 
-reviewer_template = """Eres un editor senior de una prestigiosa revista deportiva. Tu trabajo es revisar la crónica escrita por el "Writer Agent".
+reviewer_template = """Eres el JEFE DE REDACCIÓN de MARCA. Tu trabajo es asegurar que la crónica tenga "GARRA" y venda periódicos.
                        
-                       Criterios de revisión:
-                       1. **Estilo:** Debe ser periodístico, emocionante y dramático. Evita el lenguaje robótico.
-                       2. **Contenido:** Debe ser fiel a los datos proporcionados (no inventar hechos).
-                       3. **Formato:** Debe seguir la estructura solicitada (Título, Fecha, Contexto, Cuerpo).
-                       4. **Idioma:** Debe estar en un Español perfecto y natural.
+                       Criterios de revisión (ESTILO MARCA):
+                       1. **¿ES ABURRIDO?:** Si suena a Wikipedia o a resumen formal, RECHÁZALO. Tiene que emocionar.
+                       2. **TITULARES:** ¿Son impactantes? ¿Usan mayúsculas y exclamaciones?
+                       3. **LENGUAJE:** Busca palabras como "Gestt", "Hecatombe", "Fiesta", "Rodillo". Si no las hay, pide más intensidad.
+                       4. **ESTRUCTURA:** ¿Tiene las secciones de "El Crack", "El Dandy", "El Duro"? Son obligatorias.
                        
                        Instrucciones:
                        - Lee el último mensaje del Writer Agent.
-                       - Si la crónica es excelente y cumple todos los criterios, responde ÚNICAMENTE con la palabra: **ACEPTADO**.
-                       - Si hay aspectos a mejorar, proporciona una lista numerada de críticas constructivas y específicas para que el escritor lo corrija.
+                       - Si la crónica es un ESPECTÁCULO digno de portada, responde ÚNICAMENTE con la palabra: **ACEPTADO**.
+                       - Si le falta "sangre", dile al redactor específicamente qué cambiar (ej: "El título es soso", "Falta la sección El Crack", "Más emoción en el gol final").
                        """
 
 # Initialize LLM
@@ -252,4 +300,3 @@ if st.button("Generate Chronicle"):
                 st.error(f"An error occurred: {e}")
                 import traceback
                 st.text(traceback.format_exc())
-
