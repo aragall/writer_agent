@@ -170,14 +170,30 @@ if st.button("Generate Chronicle"):
         with st.spinner("Analyzing the match... (This might take a minute)"):
             try:
                 initial_state = {"messages": [HumanMessage(content=match_topic)]}
+                # st.write("Starting graph execution...") # Debug
+                
+                for event in graph.stream(initial_state):
+                    for key, value in event.items():
+                        # st.write(f"Node finished: {key}") # Debug
+                        pass
+                
                 final_state = graph.invoke(initial_state)
                 
                 # Extract the final response from the writer agent
-                final_message = final_state['messages'][-1].content
-                
-                st.markdown("### Match Chronicle")
-                st.markdown(final_message)
+                if final_state and 'messages' in final_state:
+                    messages = final_state['messages']
+                    # st.write(f"Total messages: {len(messages)}") # Debug
+                    if messages:
+                        final_message = messages[-1].content
+                        st.markdown("### Match Chronicle")
+                        st.markdown(final_message)
+                    else:
+                         st.error("No messages returned.")
+                else:
+                    st.error("Invalid final state.")
                 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+                import traceback
+                st.text(traceback.format_exc())
 
