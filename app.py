@@ -159,6 +159,7 @@ writer_template = """Tu trabajo es escribir una crónica de fútbol con el ESTIL
                         **IMPORTANTE:**
                         - EL RESULTADO DEBE ESTAR SIEMPRE EN ESPAÑOL.
                         - SI HAY POLÉMICA, MÓJATE (Opina si fue penalti o no).
+                        - NO SALUDES NI DIGAS "AQUÍ TIENES LA CRÓNICA". PÓNLA DIRECTAMENTE.
                         
                         **INSTRUCCIONES DE REVISIÓN:**
                         Si recibes feedback de un REVISOR, tu trabajo es REESCRIBIR la crónica incorporando TODAS las sugerencias.
@@ -170,13 +171,14 @@ reviewer_template = """Eres el JEFE DE REDACCIÓN de MARCA. Tu trabajo es asegur
                        Criterios de revisión (ESTILO MARCA):
                        1. **¿ES ABURRIDO?:** Si suena a Wikipedia o a resumen formal, RECHÁZALO. Tiene que emocionar.
                        2. **TITULARES:** ¿Son impactantes? ¿Usan mayúsculas y exclamaciones?
-                       3. **LENGUAJE:** Busca palabras como "Gestt", "Hecatombe", "Fiesta", "Rodillo". Si no las hay, pide más intensidad.
+                       3. **LENGUAJE:** Busca palabras como "Gesto", "Hecatombe", "Fiesta", "Rodillo". Si no las hay, pide más intensidad.
                        4. **ESTRUCTURA:** ¿Tiene las secciones de "El Crack", "El Dandy", "El Duro"? Son obligatorias.
                        
                        Instrucciones:
                        - Lee el último mensaje del Writer Agent.
                        - Si la crónica es un ESPECTÁCULO digno de portada, responde ÚNICAMENTE con la palabra: **ACEPTADO**.
-                       - Si le falta "sangre", dile al redactor específicamente qué cambiar (ej: "El título es soso", "Falta la sección El Crack", "Más emoción en el gol final").
+                       - Si le falta "sangre", dile al redactor específicamente qué cambiar en una lista numerada.
+                       - **IMPORTANTE:** TU NO ESCRIBES LA CRÓNICA. SOLO CRITICAS.
                        """
 
 # Initialize LLM
@@ -253,6 +255,7 @@ workflow.add_conditional_edges(
 graph = workflow.compile()
 
 # --- Execution ---
+# --- Execution ---
 if st.button("Generate Chronicle"):
     if not match_topic:
         st.warning("Please enter a match topic.")
@@ -260,36 +263,32 @@ if st.button("Generate Chronicle"):
         with st.spinner("Analyzing the match... (This might take a minute)"):
             try:
                 initial_state = {"messages": [HumanMessage(content=match_topic)]}
-                st.write("Starting graph execution...") 
+                status_text = st.empty()
+                status_text.text("Starting graph execution...") 
                 
+                final_state = initial_state # Initialize 
+                
+                # Iterate through the stream to show progress but capture the state
                 for event in graph.stream(initial_state):
                     for key, value in event.items():
-                        st.write(f"Node finished: {key}") 
+                        status_text.text(f"Processing step: {key}...")
+                        # Update final_state with the latest information from this step
+                        # We merge the output into our tracking state
                         if 'messages' in value:
-                             msg = value['messages'][-1]
-                             st.write(f"Message content snippet: {msg.content[:100]}...")
+                             final_state['messages'] = value['messages']
                 
-                final_state = initial_state # Initialize fallback
-
+                status_text.empty() # Clear status
                 
-                # Extract the final response from the writer agent
+                # Extract the final response from the last message in the final state
                 if final_state and 'messages' in final_state:
                     messages = final_state['messages']
                     if messages:
                         last_msg = messages[-1]
-                        # st.write("--- Debug: Last Message Info ---")
-                        # st.write(f"Type: {type(last_msg)}")
-                        # st.write(f"Content: '{last_msg.content}'") 
-                        # st.write(f"Additional kwargs: {last_msg.additional_kwargs}")
-                        # st.write("-------------------------------")
-                        
                         final_message = last_msg.content
                         
                         if not final_message:
                             st.warning("The agent returned an empty response. Let's check the previous steps.")
-                            st.json([m.content for m in messages]) # Show history to debug
                         else:
-                            st.markdown("### Match Chronicle")
                             st.markdown(final_message)
                     else:
                          st.error("No messages returned.")
