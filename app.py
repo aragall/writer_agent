@@ -266,34 +266,42 @@ if st.button("Generate Chronicle"):
                 status_text = st.empty()
                 status_text.text("Starting graph execution...") 
                 
-                final_state = initial_state # Initialize 
-                
+                all_messages = []
+                if 'messages' in initial_state:
+                    all_messages.extend(initial_state['messages'])
+
                 # Iterate through the stream to show progress but capture the state
                 for event in graph.stream(initial_state):
                     for key, value in event.items():
                         status_text.text(f"Processing step: {key}...")
-                        # Update final_state with the latest information from this step
-                        # We merge the output into our tracking state
+                        # Accumulate new messages
                         if 'messages' in value:
-                             final_state['messages'] = value['messages']
+                             all_messages.extend(value['messages'])
                 
                 status_text.empty() # Clear status
                 
-                # Extract the final response from the last message in the final state
-                if final_state and 'messages' in final_state:
-                    messages = final_state['messages']
-                    if messages:
-                        last_msg = messages[-1]
-                        final_message = last_msg.content
-                        
-                        if not final_message:
-                            st.warning("The agent returned an empty response. Let's check the previous steps.")
-                        else:
-                            st.markdown(final_message)
-                    else:
-                         st.error("No messages returned.")
+                # Find the last valid message from the Writer
+                # We iterate backwards. We look for a message that:
+                # 1. Is not "ACEPTADO"
+                # 2. Has substantial content.
+                
+                final_chronicle = None
+                
+                if all_messages:
+                    for msg in reversed(all_messages):
+                        content = msg.content
+                        if content and "ACEPTADO" not in content and len(content) > 50: # Assuming a chronicle is longer than 50 chars
+                            final_chronicle = content
+                            break
+                
+                if final_chronicle:
+                     st.markdown(final_chronicle)
                 else:
-                    st.error("Invalid final state.")
+                     st.warning("No generated chronicle found. The agent might have failed or the content was filtered.")
+                     # Fallback debugging
+                     with st.expander("Debug History"):
+                         for m in all_messages:
+                             st.write(f"**{m.type}:** {m.content}")
                 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
