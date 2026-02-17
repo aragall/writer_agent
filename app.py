@@ -111,7 +111,25 @@ writer_template = """Tu trabajo es escribir una crónica o artículo de fútbol 
                         
                       NOTA: No copies el esquema palabra por palabra. Desarrolla una narrativa completa usando los detalles proporcionados.
                        ```
+                        
+                        **INSTRUCCIONES DE REVISIÓN:**
+                        Si recibes feedback de un REVISOR, tu trabajo es REESCRIBIR la crónica incorporando TODAS las sugerencias.
+                        Mantén el mismo formato de salida.
                     """
+
+reviewer_template = """Eres un editor senior de una prestigiosa revista deportiva. Tu trabajo es revisar la crónica escrita por el "Writer Agent".
+                       
+                       Criterios de revisión:
+                       1. **Estilo:** Debe ser periodístico, emocionante y dramático. Evita el lenguaje robótico.
+                       2. **Contenido:** Debe ser fiel a los datos proporcionados (no inventar hechos).
+                       3. **Formato:** Debe seguir la estructura solicitada (Título, Fecha, Contexto, Cuerpo).
+                       4. **Idioma:** Debe estar en un Español perfecto y natural.
+                       
+                       Instrucciones:
+                       - Lee el último mensaje del Writer Agent.
+                       - Si la crónica es excelente y cumple todos los criterios, responde ÚNICAMENTE con la palabra: **ACEPTADO**.
+                       - Si hay aspectos a mejorar, proporciona una lista numerada de críticas constructivas y específicas para que el escritor lo corrija.
+                       """
 
 # Initialize LLM
 llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
@@ -120,6 +138,7 @@ llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
 search_agent = create_agent(llm, tools, search_template)
 outliner_agent = create_agent(llm, [], outliner_template)
 writer_agent = create_agent(llm, [], writer_template)
+reviewer_agent = create_agent(llm, [], reviewer_template)
 
 # 4. Define Nodes
 def agent_node(state, agent, name):
@@ -131,6 +150,7 @@ def agent_node(state, agent, name):
 search_node = functools.partial(agent_node, agent=search_agent, name="Search Agent")
 outliner_node = functools.partial(agent_node, agent=outliner_agent, name="Outliner Agent")
 writer_node = functools.partial(agent_node, agent=writer_agent, name="Writer Agent")
+reviewer_node = functools.partial(agent_node, agent=reviewer_agent, name="Reviewer Agent")
 
 # 5. Define Edge Logic
 def should_search(state) -> Literal["tools", "outliner"]:
@@ -142,6 +162,23 @@ def should_search(state) -> Literal["tools", "outliner"]:
     # Otherwise, we stop (send state to outliner)
     return "outliner"
 
+def should_continue(state) -> Literal["writer", END]:
+    messages = state['messages']
+    last_message = messages[-1]
+    
+    # If the reviewer accepts the text, we end
+    if "ACEPTADO" in last_message.content:
+        return END
+    
+    # Safety mechanism: Limit the number of revisions to check specifically for Reviewer messages
+    # Count how many times the Reviewer has spoken (approximate by content or role analysis if available, 
+    # but here we can just count total messages if simpler, or check for specific agent flow).
+    # Simple safeguard: if there are too many messages, stop.
+    if len(messages) > 15: # Assuming ~3-4 messages per turn (search, outline, write, review) -> ~3 loops
+        return END
+        
+    return "writer"
+
 # 6. Build Graph
 workflow = StateGraph(AgentState)
 
@@ -149,6 +186,7 @@ workflow.add_node("search", search_node)
 workflow.add_node("tools", tool_node)
 workflow.add_node("outliner", outliner_node)
 workflow.add_node("writer", writer_node)
+workflow.add_node("reviewer", reviewer_node)
 
 workflow.set_entry_point("search")
 
@@ -158,7 +196,11 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("tools", "search")
 workflow.add_edge("outliner", "writer")
-workflow.add_edge("writer", END)
+workflow.add_edge("writer", "reviewer")
+workflow.add_conditional_edges(
+    "reviewer",
+    should_continue
+)
 
 graph = workflow.compile()
 
