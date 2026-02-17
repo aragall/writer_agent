@@ -76,7 +76,7 @@ search_template = """Tu trabajo es buscar en la web información detallada sobre
                   Si el usuario hace una pregunta general o sobre otro tema relacionado con fútbol:
                   - Busca las noticias, estadísticas o datos históricos más relevantes y recientes que respondan a su duda.
                   
-                  NOTA: No escribas la crónica. Solo busca en la web los hechos relacionados y envía esa información al nodo organizador (outliner).
+                  NOTA: Una vez hayas obtenido la información de las búsquedas, HAZ UN RESUMEN de los datos encontrados como respuesta final. NO escribas la crónica todavía, pero aporta los datos crudos y resumidos para que el siguiente agente (outliner) pueda trabajar.
                   """
 
 outliner_template = """Tu trabajo es tomar como entrada una lista de resultados de búsqueda sobre un partido o tema de fútbol y generar un esquema estructurado para una crónica o artículo.
@@ -170,14 +170,17 @@ if st.button("Generate Chronicle"):
         with st.spinner("Analyzing the match... (This might take a minute)"):
             try:
                 initial_state = {"messages": [HumanMessage(content=match_topic)]}
-                # st.write("Starting graph execution...") # Debug
+                st.write("Starting graph execution...") 
                 
                 for event in graph.stream(initial_state):
                     for key, value in event.items():
-                        # st.write(f"Node finished: {key}") # Debug
-                        pass
+                        st.write(f"Node finished: {key}") 
+                        if 'messages' in value:
+                             msg = value['messages'][-1]
+                             st.write(f"Message content snippet: {msg.content[:100]}...")
                 
-                final_state = graph.invoke(initial_state)
+                final_state = initial_state # Initialize fallback
+
                 
                 # Extract the final response from the writer agent
                 if final_state and 'messages' in final_state:
