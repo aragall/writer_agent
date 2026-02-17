@@ -66,39 +66,50 @@ def create_agent(llm, tools, system_message: str):
         return prompt | llm
 
 # Agent Prompts
-search_template = """Your job is to search the web for detailed football match information relevant to the user's request.
-                  Focus on finding:
-                  - Final score and scorers
-                  - Key moments (goals, cards, VAR decisions)
-                  - Team lineups and tactical setups
-                  - Post-match reactions and stats
+search_template = """Tu trabajo es buscar en la web información detallada sobre partidos de fútbol relevante para la solicitud del usuario.
+                  Si el usuario pide un partido específico, busca:
+                  - Resultado final y goleadores.
+                  - Momentos clave (goles, tarjetas, decisiones del VAR).
+                  - Alineaciones y esquemas tácticos.
+                  - Reacciones post-partido y estadísticas.
                   
-                  NOTE: Do not write the chronicle. Just search the web for related facts and then forward that information to the outliner node.
+                  Si el usuario hace una pregunta general o sobre otro tema relacionado con fútbol:
+                  - Busca las noticias, estadísticas o datos históricos más relevantes y recientes que respondan a su duda.
+                  
+                  NOTA: No escribas la crónica. Solo busca en la web los hechos relacionados y envía esa información al nodo organizador (outliner).
                   """
 
-outliner_template = """Your job is to take as input a list of search results about a football match and generate a structured outline for a match chronicle.
-                       The outline should include:
-                       - Introduction (Match context, venue, importance)
-                       - First Half Summary
-                       - Second Half Summary
-                       - Key Players and Performances
-                       - Tactical Analysis (brief)
-                       - Conclusion (Final result, implications)
+outliner_template = """Tu trabajo es tomar como entrada una lista de resultados de búsqueda sobre un partido o tema de fútbol y generar un esquema estructurado para una crónica o artículo.
+                       
+                       Si es una crónica de partido, el esquema debe incluir:
+                       - Introducción (Contexto del partido, estadio, importancia).
+                       - Resumen de la Primera Parte.
+                       - Resumen de la Segunda Parte.
+                       - Jugadores Clave y Rendimiento.
+                       - Análisis Táctico (breve).
+                       - Conclusión (Resultado final, implicaciones).
+                       
+                       Si es otro tipo de artículo (ej. noticias, historia), estructura el esquema de manera lógica con:
+                       - Introducción.
+                       - Puntos clave / Desarrollo del tema.
+                       - Conclusión / Resumen.
                     """
 
-writer_template = """Your job is to write a compelling football match chronicle based on the provided outline.
-                        Write in a journalistic sports style—engaging, dramatic, and factual.
+writer_template = """Tu trabajo es escribir una crónica o artículo de fútbol convincente basado en el esquema proporcionado.
+                        Escribe en un estilo periodístico deportivo: atractivo, dramático y factual.
                         
-                        Format the output as follows:
+                        **IMPORTANTE: EL RESULTADO DEBE ESTAR SIEMPRE EN ESPAÑOL.**
                         
-                        ## TITLE: <Catchy Title>
+                        Formatea la salida de la siguiente manera:
                         
-                        **Date:** <Match Date>
-                        **Venue:** <Stadium>
+                        ## TÍTULO: <Título Atractivo>
                         
-                        <Body of the chronicle>
+                        **Fecha:** <Fecha del evento/hoy>
+                        **Contexto:** <Estadio/Competición/Tema>
                         
-                      NOTE: Do not copy the outline verbatim. Flesh it out into a full narrative using the details provided.
+                        <Cuerpo de la crónica/artículo>
+                        
+                      NOTA: No copies el esquema palabra por palabra. Desarrolla una narrativa completa usando los detalles proporcionados.
                        ```
                     """
 
